@@ -1,5 +1,6 @@
 const express = require('express');
 const multer = require('multer');
+const fs = require('fs');
 const app = express();
 const port = 4000;
 
@@ -7,6 +8,8 @@ app.use(express.json());
 app.use(express.static('uploads'));
 app.use(express.urlencoded({ extended: true }));
 
+
+// upload middle ware
 const uploadOneMiddleware = (req, res, next) => {
     const singleUpload = multer({
         dest: 'uploads',
@@ -75,6 +78,8 @@ const uploadManyMiddleware = (req, res, next) => {
     })
 }
 
+
+
 // For single file upload
 app.post('/upload', uploadOneMiddleware, (req, res) => {
     if (!req.file)
@@ -88,6 +93,54 @@ app.post('/upload-multiple', uploadManyMiddleware, (req, res) => {
         return res.status(400).send('No files uploaded.');
     res.send(`${req.files.length} file(s) uploaded!`);
 });
+
+
+// delete route
+app.delete('/api/delete-one/:imageId', (req, res) => {
+    const imageId = req.params.imageId;
+    // Locate the image by its unique identifier (e.g., filename)
+    const imagePath = `uploads/profile/${imageId}`;
+  
+    fs.unlink(imagePath, (err) => {
+      if (err) {
+        return res.status(500).json({ message: 'Failed to delete the image' , error: err.toString()});
+      }
+      res.json({ message: 'Image deleted successfully' });
+    });
+  });
+  
+  app.delete('/api/delete-many', async (req, res) => {
+    const imageIds = req.body.imageIds; // An array of image identifiers
+  
+    try {
+      // Use Promise.all to asynchronously delete images and wait for all deletions to complete
+      await Promise.all(
+        imageIds.map((imageId) => {
+          return new Promise((resolve, reject) => {
+            const imagePath = `uploads/products/${imageId}`;
+            fs.unlink(imagePath, (err) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve();
+              }
+            });
+          });
+        })
+      );
+  
+      res.json({ message: 'Images deleted successfully' });
+    } catch (err) {
+      // Handle errors from image deletions
+      console.error(err);
+      res.status(500).json({ message: 'Failed to delete images', error: err.toString() });
+    }
+  });
+  
+  
+
+
+
 
 // Error-handling middleware
 app.use((err, req, res, next) => {
