@@ -4,8 +4,8 @@ const app = express();
 const port = 4000;
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(express.static('uploads'));
+app.use(express.urlencoded({ extended: true }));
 
 const uploadOneMiddleware = (req, res, next) => {
     const singleUpload = multer({
@@ -17,11 +17,22 @@ const uploadOneMiddleware = (req, res, next) => {
                 const uniqueSuffix = Date.now() + '-' + Math.floor(100 + Math.random() * 900);
                 cb(null, uniqueSuffix + '-' + file.originalname);
             },
-        }),
+        },),
+        fileFilter: (req, file, cb) => {
+            if (file.mimetype == "image/png" || file.mimetype == "image/jpg" || file.mimetype == "image/jpeg") {
+                cb(null, true);
+            } else {
+                cb(new Error('Invalid mime type'));
+            }
+        }
     }).single('file');
     singleUpload(req, res, function (err) {
         if (err instanceof multer.MulterError) {
             err.status = 400
+            next(err)
+        } else if (err) {
+            if(err.message==='Invalid mime type')
+            err.status=400
             next(err)
         } else if (err) {
             const err = new Error('Server Error')
@@ -40,10 +51,21 @@ const uploadManyMiddleware = (req, res, next) => {
                 cb(null, uniqueSuffix + '-' + file.originalname);
             },
         }),
+        fileFilter: (req, file, cb) => {
+            if (file.mimetype == "image/png" || file.mimetype == "image/jpg" || file.mimetype == "image/jpeg") {
+                cb(null, true);
+            } else {
+                cb(new Error('Invalid mime type'));
+            }
+        }
     }).array('files', 3);
     multipleUpload(req, res, function (err) {
         if (err instanceof multer.MulterError) {
             err.status = 400
+            next(err)
+        } else if (err) {
+            if(err.message==='Invalid mime type')
+            err.status=400
             next(err)
         } else if (err) {
             const err = new Error('Server Error')
@@ -69,7 +91,7 @@ app.post('/upload-multiple', uploadManyMiddleware, (req, res) => {
 
 // Error-handling middleware
 app.use((err, req, res, next) => {
-    res.status(err.status ? err.status : 500).json({ error: err });
+    res.status(err.status ? err.status : 500).json({ error: err.message });
 });
 
 app.listen(port, () => {
