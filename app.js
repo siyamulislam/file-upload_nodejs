@@ -8,7 +8,6 @@ app.use(express.json());
 app.use(express.static('uploads'));
 app.use(express.urlencoded({ extended: true }));
 
-
 // upload middle ware
 const uploadOneMiddleware = (req, res, next) => {
     const singleUpload = multer({
@@ -78,8 +77,6 @@ const uploadManyMiddleware = (req, res, next) => {
     })
 }
 
-
-
 // For single file upload
 app.post('/upload', uploadOneMiddleware, (req, res) => {
     if (!req.file)
@@ -94,11 +91,9 @@ app.post('/upload-multiple', uploadManyMiddleware, (req, res) => {
     res.send(`${req.files.length} file(s) uploaded!`);
 });
 
-
 // delete route
 app.delete('/api/delete-one/:imageId', (req, res) => {
     const imageId = req.params.imageId;
-    // Locate the image by its unique identifier (e.g., filename)
     const imagePath = `uploads/profile/${imageId}`;
   
     fs.unlink(imagePath, (err) => {
